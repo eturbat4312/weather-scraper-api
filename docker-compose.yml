@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  # MySQL Database Service
+  mysql:
+    image: mysql:latest
+    container_name: weather_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: weather_db
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-uuser", "-ppassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  # Flask API Service
+  api:
+    build: .
+    container_name: weather_api
+    command: ["python", "api.py"]
+    ports:
+      - "5001:5000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  # Weather Scraper Service
+  scraper:
+    build: .
+    container_name: weather_scraper
+    command: ["python", "scraper.py"]
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  mysql_data:
